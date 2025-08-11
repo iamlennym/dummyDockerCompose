@@ -6,20 +6,20 @@ This repository demonstrates a simple microservices architecture using Docker Co
 
 ```
                 +-------------------+
-                |    HAProxy        |
-                | (Load Balancer)   |
-                +--------+----------+
-                         |
-         +---------------+---------------+
-         |                               |
-+--------v--------+             +--------v--------+
+ Request        |    HAProxy        |
+   |            | (Load Balancer)   |
+   |            +---^---------------+
+   |                |    |
+   |     +----------+    -----------+
+   |     |                          |
++--v--------------+             +---v-------------+
 |   apiserver     |             |     worker(s)   |
 | (REST API)      |             | (Background Job)|
 +-----------------+             +-----------------+
 ```
 
-- **apiserver/**: Exposes a REST API on port 3500.
-- **worker/**: Processes background jobs or tasks.
+- **apiserver/**: Exposes a REST API on port 3500. (formforge_dotnet)
+- **worker/**: Processes background jobs or tasks. (formforge_be)
 - **haproxy/**: Configures HAProxy to load balance requests from the API server to the background worker processes.
 - **docker-compose.yaml**: Orchestrates all services.
 
