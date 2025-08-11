@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.git/
+*.log
+*.db
+Dockerfile
+.gitignore
+attic
+

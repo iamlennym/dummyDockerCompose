@@ -1,0 +1,77 @@
+name: dummy
+
+services:
+  api-server:
+    image: apiserver:latest
+    build:
+      context: ./apiserver
+      dockerfile: Dockerfile
+    # your API stays reachable on host:3500
+    ports:
+      - "3500:3500"
+    environment:
+      PORT: "3500"
+      PYTHONUNBUFFERED: "1"
+      # IMPORTANT: point API to the LB, not directly to worker
+      WORKER_BASE_URL: "http://lb:5000"
+      # Optional: if you add session header support in your API client calls,
+      # set X-Session-Affinity to a stable per-user/per-session value.
+    depends_on:
+      - lb
+    networks: [appnet]
+    restart: unless-stopped
+    # healthcheck:
+      # test: ["CMD", "curl", "-sf", "http://localhost:3500/health"]
+      # interval: 15s
+      # timeout: 3s
+      # retries: 3
+    mem_limit: 1g
+    cpus: "1.0"
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+
+  # Scalable Python workers — no host port published (avoid conflicts)
+  worker:
+    image: worker:latest
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    expose:
+      - "5000"                 # internal only
+    environment:
+      - PORT=5000
+      - PYTHONUNBUFFERED=1
+    networks: [appnet]
+    restart: unless-stopped
+    #	healthcheck:
+      #	test: ["CMD", "curl", "-sf", "http://localhost:5000/health"]
+      #	interval: 15s
+      #	timeout: 3s
+      #	retries: 3
+    mem_limit: 1g
+    cpus: "1.0"
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+
+  # HAProxy load balancer in front of workers
+  lb:
+    image: haproxy:2.9-alpine
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on: [worker]
+    # ports:
+      # - "5000:5000"            # single public entrypoint for all workers
+    networks: [appnet]
+    restart: unless-stopped
+    #	healthcheck:
+      #	test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      #	interval: 15s
+      #	timeout: 3s
+      #	retries: 3
+    logging:
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  appnet:
+    driver: bridge
+
